@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 
 namespace Buttplug.Core
 {
+    /// <summary>
+    /// Base class for all Buttplug protocol messages.
+    /// </summary>
     public abstract class ButtplugMessage
     {
         /*
@@ -48,6 +51,12 @@ namespace Buttplug.Core
         [JsonIgnore]
         private Type _previousType = null;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ButtplugMessage"/> class.
+        /// </summary>
+        /// <param name="aId">The message ID: should be unique within a connection and non-zero, unless its a response to another message or is a server raised event.</param>
+        /// <param name="aSchemaVersion">The version of the schema that the message was introduced. Required for cross version schema support.</param>
+        /// <param name="aPreviousType">The Type for the previous version of the message, or null. This is used to downgrade messages when cominucating with older clients.</param>
         protected ButtplugMessage(uint aId, uint aSchemaVersion = 0, Type aPreviousType = null)
         {
             Id = aId;
@@ -56,6 +65,10 @@ namespace Buttplug.Core
         }
     }
 
+    /// <summary>
+    /// Interface for easy identification of Buttplug messages that should only
+    /// e sent by the server, never the client.
+    /// </summary>
     public interface IButtplugMessageOutgoingOnly
     {
     }
