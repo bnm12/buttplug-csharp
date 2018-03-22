@@ -47,7 +47,7 @@ namespace Buttplug.Core.Messages
         private string _testStringImpl;
 
         /// <summary>
-        /// The text to send.
+        /// Gets or sets the text to send.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public string TestString
@@ -662,7 +662,7 @@ namespace Buttplug.Core.Messages
         private uint _speedImpl;
 
         /// <summary>
-        /// The speed at which the fleshlight should move (0-99).
+        /// Gets or sets the speed at which the fleshlight should move (0-99).
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public uint Speed
@@ -682,7 +682,7 @@ namespace Buttplug.Core.Messages
         private uint _positionImpl;
 
         /// <summary>
-        /// The position the fleshlight should move to (0-99).
+        /// Gets or sets the position the fleshlight should move to (0-99).
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public uint Position
@@ -753,7 +753,7 @@ namespace Buttplug.Core.Messages
         public string Command;
 
         /// <summary>
-        /// The Kiiroo command (in numeric form)
+        /// Gets or sets the Kiiroo command (in numeric form)
         /// Gen1 Kiiroo devices accept 0-4 for vibration strength or position
         /// </summary>
         [JsonIgnore]
@@ -801,7 +801,7 @@ namespace Buttplug.Core.Messages
         private uint _speedImpl;
 
         /// <summary>
-        /// Speed to rotate (0-99)
+        /// Gets or sets the speed to rotate (0-99)
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public uint Speed
@@ -848,7 +848,7 @@ namespace Buttplug.Core.Messages
         private double _speedImpl;
 
         /// <summary>
-        /// The speed at which to vibrate at (0.0-1.0)
+        /// Gets or sets the speed at which to vibrate at (0.0-1.0)
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public double Speed
@@ -903,7 +903,7 @@ namespace Buttplug.Core.Messages
             public uint Index;
 
             /// <summary>
-            /// The speed to set the vibration motor to (0.0-1.0)
+            /// Gets or sets the speed to set the vibration motor to (0.0-1.0)
             /// </summary>
             [JsonProperty(Required = Required.Always)]
             public double Speed
@@ -976,7 +976,7 @@ namespace Buttplug.Core.Messages
             public uint Index;
 
             /// <summary>
-            /// The speed to set the vibration motor to (0.0-1.0)
+            /// Gets or sets the speed to set the vibration motor to (0.0-1.0)
             /// </summary>
             [JsonProperty(Required = Required.Always)]
             public double Speed
@@ -1063,7 +1063,7 @@ namespace Buttplug.Core.Messages
             public uint Duration;
 
             /// <summary>
-            /// The position within the actuators range to move to (0.0-1.0)
+            /// Gets or sets the position within the actuators range to move to (0.0-1.0)
             /// </summary>
             [JsonProperty(Required = Required.Always)]
             public double Position

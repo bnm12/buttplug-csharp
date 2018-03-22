@@ -9,7 +9,7 @@ namespace Buttplug.Core
     public class ButtplugDeviceMessage : ButtplugMessage
     {
         /// <summary>
-        /// The index of the device this message is intended to act upon.
+        /// Gets or sets the index of the device this message is intended to act upon.
         /// </summary>
         [JsonProperty(Required = Required.Always)]
         public uint DeviceIndex { get; set; }
