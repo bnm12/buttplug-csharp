@@ -17,6 +17,7 @@ install:
   - ps: get-childitem c:\tools\nunit3 -rec | where {!$_.PSIsContainer} | select-object FullName
   - ps: choco install -y -r --no-progress resharper-clt.portable
   - ps: choco install -y -r --no-progress InnoSetup
+  - ps: choco install -y -r --no-progress wkhtmltopdf
   - ps: |
       function gitVersion() {
         $env:newhash=git rev-parse HEAD
@@ -73,6 +74,7 @@ build:
   parallel: true
   project: Buttplug.sln
   publish_nuget: true
+
 after_build:
   - cmd: InspectCode.exe -o=resharper-clt-output.xml --project=Buttplug* Buttplug.sln
   - ps: $result = [xml](Get-Content .\resharper-clt-output.xml)
@@ -92,6 +94,10 @@ after_test:
   # Test currently doesn't work, possibly because installer is blocked by access control dialog?
   #- ps: test\check-registry.ps1
   - ps: Push-AppveyorArtifact installer\buttplug-installer.exe -FileName Buttplug-$env:CONFIGURATION-$env:APPVEYOR_BUILD_VERSION-installer.exe
+  - ps: |
+      Push-Location ./docs
+      ./build.ps1
+      Pop-Location
 cache:
   - packages -> **\packages.config
   # Cache chocolatey packages
