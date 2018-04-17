@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Buttplug.Core;
+using System.Threading.Tasks;
 using Buttplug.Core.Messages;
 using Buttplug.Server.Bluetooth.Devices;
 using Buttplug.Server.Test.Util;
@@ -10,17 +11,16 @@ using NUnit.Framework;
 
 namespace Buttplug.Server.Test.Bluetooth.Devices
 {
-    [TestFixture]
-    public class KiirooVibratorTests
+    internal class LiBoTest
     {
         [NotNull]
-        private BluetoothDeviceTestUtils<KiirooBluetoothInfo> testUtil;
+        private BluetoothDeviceTestUtils<LiBoBluetoothInfo> testUtil;
 
         [SetUp]
         public void Init()
         {
-            testUtil = new BluetoothDeviceTestUtils<KiirooBluetoothInfo>();
-            testUtil.SetupTest("PEARL");
+            testUtil = new BluetoothDeviceTestUtils<LiBoBluetoothInfo>();
+            testUtil.SetupTest("PiPiJing");
         }
 
         [Test]
@@ -28,7 +28,6 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
         {
             testUtil.TestDeviceAllowedMessages(new Dictionary<System.Type, uint>()
             {
-                { typeof(KiirooCmd), 0 },
                 { typeof(StopDeviceCmd), 0 },
                 { typeof(SingleMotorVibrateCmd), 0 },
                 { typeof(VibrateCmd), 1 },
@@ -43,7 +42,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             var expected =
                 new List<(byte[], uint)>()
                 {
-                    (Encoding.ASCII.GetBytes("2,\n"), testUtil.NoCharacteristic),
+                    (new byte[] { 2 }, (uint)LiBoBluetoothInfo.Chrs.WriteVibrate),
                 };
 
             testUtil.TestDeviceMessage(new SingleMotorVibrateCmd(4, 0.5), expected, false);
@@ -51,7 +50,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             expected =
                 new List<(byte[], uint)>()
                 {
-                    (Encoding.ASCII.GetBytes("0,\n"), testUtil.NoCharacteristic),
+                    (new byte[] { 0 }, (uint)LiBoBluetoothInfo.Chrs.WriteVibrate),
                 };
 
             testUtil.TestDeviceMessage(new StopDeviceCmd(4), expected, false);
@@ -63,7 +62,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             var expected =
                 new List<(byte[], uint)>()
                 {
-                    (Encoding.ASCII.GetBytes("2,\n"), testUtil.NoCharacteristic),
+                    (new byte[] { 2 }, (uint)LiBoBluetoothInfo.Chrs.WriteVibrate),
                 };
 
             testUtil.TestDeviceMessage(new SingleMotorVibrateCmd(4, 0.5), expected, false);
@@ -75,7 +74,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             var expected =
                 new List<(byte[], uint)>()
                 {
-                    (Encoding.ASCII.GetBytes("2,\n"), testUtil.NoCharacteristic),
+                    (new byte[] { 2 }, (uint)LiBoBluetoothInfo.Chrs.WriteVibrate),
                 };
 
             testUtil.TestDeviceMessage(VibrateCmd.Create(4, 1, 0.5, 1), expected, false);
