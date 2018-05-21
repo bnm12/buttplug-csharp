@@ -9,13 +9,9 @@ namespace Buttplug.Server.Bluetooth.Devices
 {
     internal class WeVibeBluetoothInfo : IBluetoothDeviceInfo
     {
-        public enum Chrs : uint
-        {
-            Tx = 0,
-            Rx,
-        }
-
         public Guid[] Services { get; } = { new Guid("f000bb03-0451-4000-b000-000000000000") };
+
+        public string[] NamePrefixes { get; } = { };
 
         public string[] Names { get; } =
         {
@@ -36,14 +32,7 @@ namespace Buttplug.Server.Bluetooth.Devices
             "Wish",
         };
 
-        public Guid[] Characteristics { get; } =
-        {
-            // tx characteristic
-            new Guid("f000c000-0451-4000-b000-000000000000"),
-
-            // rx characteristic
-            new Guid("f000b000-0451-4000-b000-000000000000"),
-        };
+        public Dictionary<uint, Guid> Characteristics { get; } = new Dictionary<uint, Guid>();
 
         public IButtplugDevice CreateDevice(IButtplugLogManager aLogManager,
             IBluetoothDeviceInterface aInterface)
@@ -73,7 +62,7 @@ namespace Buttplug.Server.Bluetooth.Devices
                       IBluetoothDeviceInterface aInterface,
                       IBluetoothDeviceInfo aInfo)
             : base(aLogManager,
-                   $"WeVibe Device ({aInterface.Name})",
+                   $"WeVibe {aInterface.Name}",
                    aInterface,
                    aInfo)
         {
@@ -99,13 +88,7 @@ namespace Buttplug.Server.Bluetooth.Devices
                 return BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, "Wrong Handler");
             }
 
-            var subCmds = new List<VibrateCmd.VibrateSubcommand>();
-            for (var i = 0u; i < _vibratorCount; i++)
-            {
-                subCmds.Add(new VibrateCmd.VibrateSubcommand(i, cmdMsg.Speed));
-            }
-
-            return await HandleVibrateCmd(new VibrateCmd(cmdMsg.DeviceIndex, subCmds, cmdMsg.Id));
+            return await HandleVibrateCmd(VibrateCmd.Create(cmdMsg.DeviceIndex, cmdMsg.Id, cmdMsg.Speed, _vibratorCount));
         }
 
         private async Task<ButtplugMessage> HandleVibrateCmd(ButtplugDeviceMessage aMsg)
@@ -163,9 +146,7 @@ namespace Buttplug.Server.Bluetooth.Devices
                 data[5] = 0x00;
             }
 
-            return await Interface.WriteValue(aMsg.Id,
-                Info.Characteristics[(uint)WeVibeBluetoothInfo.Chrs.Tx],
-                data);
+            return await Interface.WriteValue(aMsg.Id, data);
         }
     }
 }
