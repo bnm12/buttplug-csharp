@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
 using LiveCharts;
 using LiveCharts.Wpf;
 using System.Windows.Controls;
@@ -21,6 +23,8 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
         public SeriesCollection HighPowerSeriesCollection { get; set; }
         private readonly ChartValues<double> LowPowerValues;
         private readonly ChartValues<double> HighPowerValues;
+        public event EventHandler<double> MultiplierChanged;
+        public event EventHandler<bool> PassthruChanged;
 
         public VibeGraphTab()
         {
@@ -58,8 +62,9 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
                 HighPowerChart.UpdaterState = UpdaterState.Paused;
                 LowPowerChart.UpdaterState = UpdaterState.Paused;
             });
+
         }
-        
+
         public void AddVibrationValue(double aLowPower, double aHighPower)
         {
             LowPowerValues.RemoveAt(0);
@@ -80,6 +85,15 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
                 // Usually means we're shutting down. noop.
             }
         }
-        
+
+        private void PassthruCheckBox_Changed(object aSender, RoutedEventArgs aArgs)
+        {
+            PassthruChanged?.Invoke(this, PassthruCheckBox.IsChecked.Value);
+        }
+
+        private void multiplierSlider_ValueChanged(object aSender, System.Windows.RoutedPropertyChangedEventArgs<double> aArgs)
+        {
+            MultiplierChanged?.Invoke(this, aArgs.NewValue);
+        }
     }
 }

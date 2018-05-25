@@ -8,16 +8,16 @@ using NUnit.Framework;
 namespace Buttplug.Server.Test.Bluetooth.Devices
 {
     [TestFixture]
-    public class FleshlightLaunchTests
+    public class KiirooOnyx2Tests
     {
         [NotNull]
-        private BluetoothDeviceTestUtils<FleshlightLaunchBluetoothInfo> testUtil;
+        private BluetoothDeviceTestUtils<KiirooOnyx2BluetoothInfo> testUtil;
 
         [SetUp]
         public void Init()
         {
-            testUtil = new BluetoothDeviceTestUtils<FleshlightLaunchBluetoothInfo>();
-            testUtil.SetupTest("Launch");
+            testUtil = new BluetoothDeviceTestUtils<KiirooOnyx2BluetoothInfo>();
+            testUtil.SetupTest("Onyx2");
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
         {
             testUtil.TestDeviceInitialize(new List<(byte[], uint)>()
             {
-                (new byte[1] { 0x0 }, (uint)FleshlightLaunchBluetoothInfo.Chrs.Cmd),
+                (new byte[1] { 0x0 }, (uint)KiirooOnyx2BluetoothInfo.Chrs.Cmd),
             }, true);
         }
 
@@ -49,7 +49,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             testUtil.TestDeviceMessage(new FleshlightLaunchFW12Cmd(4, 50, 50),
                 new List<(byte[], uint)>()
                 {
-                    (new byte[2] { 50, 50 }, (uint)FleshlightLaunchBluetoothInfo.Chrs.Tx),
+                    (new byte[2] { 50, 50 }, (uint)KiirooOnyx2BluetoothInfo.Chrs.Tx),
                 }, false);
         }
 
@@ -77,7 +77,7 @@ namespace Buttplug.Server.Test.Bluetooth.Devices
             testUtil.TestDeviceMessage(msg,
                 new List<(byte[], uint)>()
                 {
-                    (new byte[2] { 50, 20 }, (uint)FleshlightLaunchBluetoothInfo.Chrs.Tx),
+                    (new byte[2] { 50, 20 }, (uint)KiirooOnyx2BluetoothInfo.Chrs.Tx),
                 }, false);
         }
 

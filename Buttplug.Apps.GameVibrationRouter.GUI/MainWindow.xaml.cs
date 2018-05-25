@@ -36,9 +36,6 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
         [NotNull]
         private readonly VibeGraphTab _graphTab;
 
-        [NotNull]
-        private readonly VibeConfigTab _vibeTab;
-
         private IpcServerChannel _xinputHookServer;
         private string _channelName;
         private List<ButtplugDeviceInfo> _devices = new List<ButtplugDeviceInfo>();
@@ -74,9 +71,8 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
             ButtplugTab.AddDevicePanel(_bpServer);
             ButtplugTab.SelectedDevicesChanged += OnSelectedDevicesChanged;
 
-            _vibeTab = new VibeConfigTab();
-            _vibeTab.MultiplierChanged += MultiplierChanged;
-            ButtplugTab.SetOtherTab2("Vibe Config", _vibeTab);
+            _graphTab.MultiplierChanged += MultiplierChanged;
+            _graphTab.PassthruChanged += PassthruChanged;
 
             var config = new ButtplugConfig("Buttplug");
             ButtplugTab.GetAboutControl().CheckUpdate(config, "buttplug-csharp");
@@ -93,6 +89,11 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
         private void MultiplierChanged(object sender, double vibeMultiplier)
         {
             _vibrationMultiplier = vibeMultiplier;
+        }
+
+        private void PassthruChanged(object sender, bool shouldPassthru)
+        {
+            ButtplugGameVibrationRouterInterface._shouldPassthru = shouldPassthru;
         }
 
         public void AddPoint(object o, ElapsedEventArgs e)
@@ -157,7 +158,7 @@ namespace Buttplug.Apps.GameVibrationRouter.GUI
                     }
                     double vibeSpeed = (_lastVibration.LeftMotorSpeed + _lastVibration.RightMotorSpeed) / (2.0 * 65535.0);
                     await _bpServer.SendMessage(new SingleMotorVibrateCmd(device.Index,
-                        vibeSpeed * _vibrationMultiplier > 1 ? 1 : vibeSpeed * _vibrationMultiplier));
+                        Math.Min(vibeSpeed * _vibrationMultiplier, 1.0)));
                 }
             });
         }

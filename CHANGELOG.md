@@ -1,3 +1,32 @@
+# 0.2.2 (2018-05-21)
+
+## Features
+
+- Added Hardware Support
+  - Vorze UFO SA
+  - LiBo Whale
+  - MysteryVibe Crescendo
+  - Cyclone X10 (USB)
+  - Kiiroo Onyx 2
+- Added name prefix device searching (Hopefully fixes Lovense update problems)
+- Rename WebsocketServer to Server in preparation for IPC
+- Add signal multiplier to GVR, for games with light vibration
+- Add controller passthru to GVR, to allow turning off gamepad rumble when routing to toys
+
+## Bugfixes
+
+- Remove ping checking from Server to stop background tab disconnects
+  on webbrowsers
+- Move all .Net Standard project to .Net 4.7
+- Update dependencies
+- Change server GUI from disappearing to disabling on server stop
+- Clear last error on server on successful connect or server start
+- Fix lockup when closing applications that use the device tab and have a device scan going
+- Fix crash when device names is missing in friendly name tables
+- Fix crash when trying to open link on systems without a browser selected.
+- Fix crash when Crypto key can't be written to disk
+- Fix crash when Trancevibrator registry lookup returns unexpected types
+
 # 0.2.1 (2018-03-08)
 
 ## Features

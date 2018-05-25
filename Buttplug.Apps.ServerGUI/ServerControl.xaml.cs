@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -46,8 +46,8 @@ namespace Buttplug.Apps.ServerGUI
             _connUrls = new ConnUrlList();
             _port = 12345;
 
-            // Usually, if we throw errors then connect, it's not actually an error.
-            // If we don't connect after a second of throwing an exception, pop the toaster, but not before then.
+            // Usually, if we throw errors then connect, it's not actually an error. If we don't
+            // connect after a second of throwing an exception, pop the toaster, but not before then.
             _toastTimer = new Timer
             {
                 Interval = 1000,
@@ -89,6 +89,20 @@ namespace Buttplug.Apps.ServerGUI
             _log.OnLogException += ExceptionLogged;
         }
 
+        private void SetLastError(string aErrorMsg)
+        {
+            LastErrorLabel.Visibility = Visibility.Visible;
+            LastError.Visibility = Visibility.Visible;
+            LastError.Text = aErrorMsg;
+        }
+
+        private void ClearLastError()
+        {
+            LastErrorLabel.Visibility = Visibility.Hidden;
+            LastError.Visibility = Visibility.Hidden;
+            LastError.Text = string.Empty;
+        }
+
         private void WebSocketExceptionHandler(object aObj, [NotNull] UnhandledExceptionEventArgs aEx)
         {
             _toastTimer.Enabled = true;
@@ -120,6 +134,8 @@ namespace Buttplug.Apps.ServerGUI
             {
                 ConnStatus.Content = "(Connected) " + aEvent.ClientName;
                 DisconnectButton.IsEnabled = true;
+                // We've gotten a connection, clear the last error.
+                ClearLastError();
             });
         }
 
@@ -162,7 +178,7 @@ namespace Buttplug.Apps.ServerGUI
                 Dispatcher.InvokeAsync(() =>
                 {
                     // Show the error message in the app
-                    LastError.Text = aEvent.ErrorMessage;
+                    SetLastError(aEvent.ErrorMessage);
                 });
                 _toastTimer.Enabled = true;
             }
@@ -202,26 +218,32 @@ namespace Buttplug.Apps.ServerGUI
 
                 ConnStatus.Content = "(Not Connected)";
                 DisconnectButton.IsEnabled = false;
-                ConnInfo.Visibility = Visibility.Visible;
+                ConnInfo.IsEnabled = true;
+
+                // We've brought the server up, clear the error.
+                ClearLastError();
             }
             catch (SocketException e)
             {
-                _log.LogException(e, true, e.Message);
+                _currentExceptionMessage = e.Message;
+                _log.LogException(e, true, _currentExceptionMessage);
             }
             catch (CryptographicException e)
             {
-                _log.LogException(e, true, e.Message);
+                _currentExceptionMessage =
+                    "Cannot start server with SSL. Try turning off SSL. The server can still be used with ScriptPlayer, but not web applications. If you need SSL, contact Buttplug Developers for support (see About Tab).";
+                _log.LogException(e, true, _currentExceptionMessage);
             }
         }
 
         public void StopServer()
         {
-            _ws.StopServer();
+            _ws?.StopServer();
             ConnToggleButton.Content = "Start";
             SecureCheckBox.IsEnabled = true;
             PortTextBox.IsEnabled = true;
             LoopbackCheckBox.IsEnabled = true;
-            ConnInfo.Visibility = Visibility.Collapsed;
+            ConnInfo.IsEnabled = false;
         }
 
         private void ConnToggleButton_Click(object aObj, RoutedEventArgs aEvent)
@@ -291,8 +313,7 @@ namespace Buttplug.Apps.ServerGUI
                 }
                 catch (Exception ex)
                 {
-                    // We've seen weird instances of can't open clipboard
-                    // but it's pretty rare. Log it.
+                    // We've seen weird instances of can't open clipboard but it's pretty rare. Log it.
                     _log.LogException(ex);
                 }
             }
