@@ -1,8 +1,14 @@
-﻿using System;
+﻿// <copyright file="HidManager.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Buttplug.Core;
+using Buttplug.Core.Logging;
 using Buttplug.Server.Managers.HidManager.Devices;
 using HidLibrary;
 
@@ -12,22 +18,21 @@ namespace Buttplug.Server.Managers.HidManager
     {
         private readonly List<HidDeviceFactory> _deviceFactories;
 
-        private readonly IButtplugLogManager _logger;
+        private readonly IButtplugLog _log;
 
         private bool _scanning;
 
         public HidManager(IButtplugLogManager aLogger)
             : base(aLogger)
         {
-            _logger = aLogger;
             _deviceFactories = new List<HidDeviceFactory>() { new HidDeviceFactory(aLogger, new CycloneX10HidDeviceInfo()) };
         }
 
         public override void StartScanning()
         {
             _scanning = true;
-            var hids = new HidEnumerator();
-            foreach (var hid in hids.Enumerate())
+            var hidDevices = new HidEnumerator();
+            foreach (var hid in hidDevices.Enumerate())
             {
                 try
                 {
@@ -38,9 +43,9 @@ namespace Buttplug.Server.Managers.HidManager
                     prod = prod.Substring(0, prod.IndexOf('\0'));
                     vend = vend.Substring(0, vend.IndexOf('\0'));
 
-                    _logger?.GetLogger(GetType()).Trace("Found HID device (" +
+                    BpLogger.Trace("Found HID device (" +
                         hid.Attributes.VendorHexId + ":" + hid.Attributes.ProductHexId +
-                        "): " + vend + " - " + prod );
+                        "): " + vend + " - " + prod);
 
                     var factories = _deviceFactories.Where(x =>
                         x.MayBeDevice(hid.Attributes.VendorId, hid.Attributes.ProductId));
@@ -49,7 +54,7 @@ namespace Buttplug.Server.Managers.HidManager
                     {
                         if (buttplugHidDeviceFactories.Any())
                         {
-                            BpLogger.Warn($"Found multiple HID factories for " + hid.Attributes.VendorHexId + ":" + hid.Attributes.ProductHexId);
+                            BpLogger.Warn($"Found multiple HID factories for {hid.Attributes.VendorHexId}:{hid.Attributes.ProductHexId}");
                             buttplugHidDeviceFactories.ToList().ForEach(x => BpLogger.Warn(x.GetType().Name));
                         }
                         else
@@ -68,13 +73,14 @@ namespace Buttplug.Server.Managers.HidManager
                 }
                 catch (Exception e)
                 {
-                    _logger?.GetLogger(GetType()).LogException(e);
+                    // TODO Figure out what exceptions can actually be thrown here.
+                    BpLogger.Error(e.Message);
                 }
             }
 
             _scanning = false;
             InvokeScanningFinished();
-            }
+        }
 
         public override void StopScanning()
         {

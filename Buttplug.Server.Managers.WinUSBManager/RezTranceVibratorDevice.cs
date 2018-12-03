@@ -1,9 +1,16 @@
-﻿using System;
+﻿// <copyright file="RezTranceVibratorDevice.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Buttplug.Core;
+using Buttplug.Core.Devices;
+using Buttplug.Core.Logging;
 using Buttplug.Core.Messages;
 using MadWizard.WinUSBNet;
 
@@ -18,43 +25,38 @@ namespace Buttplug.Server.Managers.WinUSBManager
             : base(aLogManager, "Trancevibrator " + aIndex, "Trancevibrator " + aIndex)
         {
             _device = aDevice;
-            MsgFuncs.Add(typeof(SingleMotorVibrateCmd), new ButtplugDeviceWrapper(HandleSingleMotorVibrateCmd));
-            MsgFuncs.Add(typeof(StopDeviceCmd), new ButtplugDeviceWrapper(HandleStopDeviceCmd));
-            MsgFuncs.Add(typeof(VibrateCmd), new ButtplugDeviceWrapper(HandleVibrateCmd));
+            AddMessageHandler<SingleMotorVibrateCmd>(HandleSingleMotorVibrateCmd);
+            AddMessageHandler<StopDeviceCmd>(HandleStopDeviceCmd);
+            AddMessageHandler<VibrateCmd>(HandleVibrateCmd, new MessageAttributes { FeatureCount = 1 });
         }
 
         public override void Disconnect()
         {
         }
 
-        private Task<ButtplugMessage> HandleStopDeviceCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleStopDeviceCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
             BpLogger.Debug("Stopping Device " + Name);
-            return HandleSingleMotorVibrateCmd(new SingleMotorVibrateCmd(aMsg.DeviceIndex, 0, aMsg.Id));
+            return HandleSingleMotorVibrateCmd(new SingleMotorVibrateCmd(aMsg.DeviceIndex, 0, aMsg.Id), aToken);
         }
 
-        private Task<ButtplugMessage> HandleVibrateCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleVibrateCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
-            if (!(aMsg is VibrateCmd cmdMsg))
-            {
-                return Task.FromResult<ButtplugMessage>(BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, "Wrong Handler"));
-            }
+            var cmdMsg = CheckMessageHandler<VibrateCmd>(aMsg);
 
             if (cmdMsg.Speeds.Count == 0 || cmdMsg.Speeds.Count > _vibratorCount)
             {
-                return Task.FromResult<ButtplugMessage>(new Error("VibrateCmd requires 1 speed for this device.",
-                    Error.ErrorClass.ERROR_DEVICE,
-                    cmdMsg.Id));
+                throw new ButtplugDeviceException(BpLogger, "VibrateCmd requires 1 speed for this device.",
+                    cmdMsg.Id);
             }
 
             foreach (var v in cmdMsg.Speeds)
             {
                 if (v.Index >= _vibratorCount)
                 {
-                    return Task.FromResult<ButtplugMessage>(new Error(
+                    throw new ButtplugDeviceException(BpLogger,
                         $"Index {v.Index} is out of bounds for VibrateCmd for this device.",
-                        Error.ErrorClass.ERROR_DEVICE,
-                        cmdMsg.Id));
+                        cmdMsg.Id);
                 }
 
                 var speed = (byte)Math.Floor(v.Speed * 255);
@@ -70,13 +72,9 @@ namespace Buttplug.Server.Managers.WinUSBManager
             return Task.FromResult<ButtplugMessage>(new Ok(aMsg.Id));
         }
 
-        private Task<ButtplugMessage> HandleSingleMotorVibrateCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleSingleMotorVibrateCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
-            var cmdMsg = aMsg as SingleMotorVibrateCmd;
-            if (cmdMsg is null)
-            {
-                return Task.FromResult<ButtplugMessage>(BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, "Wrong Handler"));
-            }
+            var cmdMsg = CheckMessageHandler<SingleMotorVibrateCmd>(aMsg);
 
             var speeds = new List<VibrateCmd.VibrateSubcommand>();
             for (uint i = 0; i < _vibratorCount; i++)
@@ -84,7 +82,7 @@ namespace Buttplug.Server.Managers.WinUSBManager
                 speeds.Add(new VibrateCmd.VibrateSubcommand(i, cmdMsg.Speed));
             }
 
-            return HandleVibrateCmd(new VibrateCmd(aMsg.DeviceIndex, speeds, aMsg.Id));
+            return HandleVibrateCmd(new VibrateCmd(aMsg.DeviceIndex, speeds, aMsg.Id), aToken);
         }
     }
 }

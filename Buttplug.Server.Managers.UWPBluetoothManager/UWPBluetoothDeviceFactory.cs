@@ -1,8 +1,15 @@
-﻿using System;
+﻿// <copyright file="UWPBluetoothDeviceFactory.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Buttplug.Core;
+using Buttplug.Core.Devices;
+using Buttplug.Core.Logging;
 using Buttplug.Core.Messages;
 using Buttplug.Server.Bluetooth;
 using JetBrains.Annotations;
@@ -46,7 +53,7 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
                 }
             }
 
-            if (_deviceInfo.Names.Any() && !_deviceInfo.Names.Contains(advertName) || !_deviceInfo.Names.Any())
+            if ((_deviceInfo.Names.Any() && !_deviceInfo.Names.Contains(advertName)) || !_deviceInfo.Names.Any())
             {
                 _bpLogger.Trace($"Dropping query for {advertName}.");
                 return false;
@@ -134,7 +141,7 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
 
             // If initialization fails, don't actually send the message back. Just return null, we'll
             // have the info in the logs.
-            return await device.Initialize() is Ok ? device : null;
+            return await device.InitializeAsync().ConfigureAwait(false) is Ok ? device : null;
         }
     }
 }

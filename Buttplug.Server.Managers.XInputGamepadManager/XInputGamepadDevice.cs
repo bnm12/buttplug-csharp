@@ -1,7 +1,16 @@
-﻿using System;
+﻿// <copyright file="XInputGamepadDevice.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Buttplug.Core;
+using Buttplug.Core.Devices;
+using Buttplug.Core.Logging;
 using Buttplug.Core.Messages;
 using SharpDX.XInput;
 
@@ -16,23 +25,20 @@ namespace Buttplug.Server.Managers.XInputGamepadManager
             : base(aLogManager, "XBox Compatible Gamepad (XInput)", aDevice.UserIndex.ToString())
         {
             _device = aDevice;
-            MsgFuncs.Add(typeof(SingleMotorVibrateCmd), new ButtplugDeviceWrapper(HandleSingleMotorVibrateCmd));
-            MsgFuncs.Add(typeof(VibrateCmd), new ButtplugDeviceWrapper(HandleVibrateCmd, new MessageAttributes() { FeatureCount = 2 }));
-            MsgFuncs.Add(typeof(StopDeviceCmd), new ButtplugDeviceWrapper(HandleStopDeviceCmd));
+            AddMessageHandler<SingleMotorVibrateCmd>(HandleSingleMotorVibrateCmd);
+            AddMessageHandler<VibrateCmd>(HandleVibrateCmd, new MessageAttributes() { FeatureCount = 2 });
+            AddMessageHandler<StopDeviceCmd>(HandleStopDeviceCmd);
         }
 
-        private Task<ButtplugMessage> HandleStopDeviceCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleStopDeviceCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
             BpLogger.Debug("Stopping Device " + Name);
-            return HandleSingleMotorVibrateCmd(new SingleMotorVibrateCmd(aMsg.DeviceIndex, 0, aMsg.Id));
+            return HandleSingleMotorVibrateCmd(new SingleMotorVibrateCmd(aMsg.DeviceIndex, 0, aMsg.Id), aToken);
         }
 
-        private Task<ButtplugMessage> HandleSingleMotorVibrateCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleSingleMotorVibrateCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
-            if (!(aMsg is SingleMotorVibrateCmd cmdMsg))
-            {
-                return Task.FromResult<ButtplugMessage>(BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, "Wrong Handler"));
-            }
+            var cmdMsg = CheckMessageHandler<SingleMotorVibrateCmd>(aMsg);
 
             var speeds = new List<VibrateCmd.VibrateSubcommand>();
             for (uint i = 0; i < 2; i++)
@@ -40,34 +46,15 @@ namespace Buttplug.Server.Managers.XInputGamepadManager
                 speeds.Add(new VibrateCmd.VibrateSubcommand(i, cmdMsg.Speed));
             }
 
-            return HandleVibrateCmd(new VibrateCmd(cmdMsg.DeviceIndex, speeds, cmdMsg.Id));
+            return HandleVibrateCmd(new VibrateCmd(cmdMsg.DeviceIndex, speeds, cmdMsg.Id), aToken);
         }
 
-        private Task<ButtplugMessage> HandleVibrateCmd(ButtplugDeviceMessage aMsg)
+        private Task<ButtplugMessage> HandleVibrateCmd(ButtplugDeviceMessage aMsg, CancellationToken aToken)
         {
-            if (!(aMsg is VibrateCmd cmdMsg))
-            {
-                return Task.FromResult<ButtplugMessage>(BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, "Wrong Handler"));
-            }
-
-            if (cmdMsg.Speeds.Count < 1 || cmdMsg.Speeds.Count > 2)
-            {
-                return Task.FromResult<ButtplugMessage>(new Error(
-                    "VibrateCmd requires between 1 and 2 vectors for this device.",
-                    Error.ErrorClass.ERROR_DEVICE,
-                    cmdMsg.Id));
-            }
+            var cmdMsg = CheckGenericMessageHandler<VibrateCmd>(aMsg, 2);
 
             foreach (var vi in cmdMsg.Speeds)
             {
-                if (vi.Index < 0 || vi.Index >= 2)
-                {
-                    return Task.FromResult<ButtplugMessage>(new Error(
-                        $"Index {vi.Index} is out of bounds for VibrateCmd for this device.",
-                        Error.ErrorClass.ERROR_DEVICE,
-                        cmdMsg.Id));
-                }
-
                 _vibratorSpeeds[vi.Index] = _vibratorSpeeds[vi.Index] < 0 ? 0
                                           : _vibratorSpeeds[vi.Index] > 1 ? 1
                                                                           : vi.Speed;
@@ -93,7 +80,7 @@ namespace Buttplug.Server.Managers.XInputGamepadManager
                     return Task.FromResult<ButtplugMessage>(new Ok(aMsg.Id));
                 }
 
-                return Task.FromResult<ButtplugMessage>(BpLogger.LogErrorMsg(aMsg.Id, Error.ErrorClass.ERROR_DEVICE, e.Message));
+                throw new ButtplugDeviceException(BpLogger, e.Message, aMsg.Id);
             }
 
             return Task.FromResult<ButtplugMessage>(new Ok(aMsg.Id));

@@ -1,8 +1,15 @@
-﻿using System;
+﻿// <copyright file="UWPBluetoothManager.cs" company="Nonpolynomial Labs LLC">
+//     Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+//     Copyright (c) Nonpolynomial Labs LLC. All rights reserved. Licensed under the BSD 3-Clause
+//     license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Management;
 using System.Threading.Tasks;
-using Buttplug.Core;
+using Buttplug.Core.Logging;
 using Buttplug.Server.Bluetooth;
 using JetBrains.Annotations;
 using Microsoft.Win32;
@@ -15,10 +22,14 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
     {
         [NotNull]
         private readonly BluetoothLEAdvertisementWatcher _bleWatcher;
+
         [NotNull]
         private readonly List<UWPBluetoothDeviceFactory> _deviceFactories;
+
         [NotNull]
         private readonly List<ulong> _currentlyConnecting;
+
+        private Task _radioTask;
 
         public static bool HasRegistryKeysSet()
         {
@@ -39,7 +50,8 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
             BpLogger.Info("Loading UWP Bluetooth Manager");
             _currentlyConnecting = new List<ulong>();
 
-            // Introspect the ButtplugDevices namespace for all Factory classes, then create instances of all of them.
+            // Introspect the ButtplugDevices namespace for all Factory classes, then create
+            // instances of all of them.
             _deviceFactories = new List<UWPBluetoothDeviceFactory>();
             BuiltinDevices.ForEach(aDeviceFactory =>
                 {
@@ -49,9 +61,9 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
 
             _bleWatcher = new BluetoothLEAdvertisementWatcher { ScanningMode = BluetoothLEScanningMode.Active };
 
-            // We can't filter device advertisements because you can only add one LocalName filter at a time, meaning we
-            // would have to set up multiple watchers for multiple devices. We'll handle our own filtering via the factory
-            // classes whenever we receive a device.
+            // We can't filter device advertisements because you can only add one LocalName filter at
+            // a time, meaning we would have to set up multiple watchers for multiple devices. We'll
+            // handle our own filtering via the factory classes whenever we receive a device.
             _bleWatcher.Received += OnAdvertisementReceived;
             _bleWatcher.Stopped += OnWatcherStopped;
             var adapterTask = Task.Run(() => BluetoothAdapter.GetDefaultAsync().AsTask());
@@ -70,14 +82,38 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
             }
 
             BpLogger.Debug("UWP Manager found working Bluetooth LE Adapter");
+
+            // Only run radio information lookup if we're actually logging at the level it will show.
+            if (aLogManager.Level >= ButtplugLogLevel.Debug)
+            {
+                // Do radio lookup in a background task, as the search query is very slow.
+                // TODO Should probably try and cancel this if it's still running on object destruction, but the Get() call is uninterruptable?
+                _radioTask = Task.Run(() => LogBluetoothRadioInfo());
+            }
+        }
+
+        private void LogBluetoothRadioInfo()
+        {
+            // Log all bluetooth radios on the system, in case we need the information from the user later.
+            var objSearcher = new ManagementObjectSearcher("Select * from Win32_PnPSignedDriver where DeviceName like '%Bluetooth%'");
+
+            var objCollection = objSearcher.Get();
+
+            BpLogger.Debug("Bluetooth Radio Information:");
+            foreach (var obj in objCollection)
+            {
+                var info =
+                    $"Device='{obj["DeviceName"]}',Manufacturer='{obj["Manufacturer"]}',DriverVersion='{obj["DriverVersion"]}' ";
+                BpLogger.Debug(info);
+            }
         }
 
         private async void OnAdvertisementReceived(BluetoothLEAdvertisementWatcher aObj,
-                                                  BluetoothLEAdvertisementReceivedEventArgs aEvent)
+                                                   BluetoothLEAdvertisementReceivedEventArgs aEvent)
         {
             if (aEvent?.Advertisement == null)
             {
-                BpLogger.Debug("Null BLE advertisement recieved: skipping");
+                BpLogger.Debug("Null BLE advertisement received: skipping");
                 return;
             }
 
@@ -89,7 +125,8 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
             // BpLogger.Trace($"Got BLE Advertisement for device: {aEvent.Advertisement.LocalName} / {aEvent.BluetoothAddress}");
             if (_currentlyConnecting.Contains(btAddr))
             {
-                // BpLogger.Trace($"Ignoring advertisement for already connecting device: {aEvent.Advertisement.LocalName} / {aEvent.BluetoothAddress}");
+                // BpLogger.Trace($"Ignoring advertisement for already connecting device:
+                // {aEvent.Advertisement.LocalName} / {aEvent.BluetoothAddress}");
                 return;
             }
 
@@ -130,7 +167,7 @@ namespace Buttplug.Server.Managers.UWPBluetoothManager
                 // Just log the error and hope it reconnects on a later retry.
                 try
                 {
-                    var d = await factory.CreateDeviceAsync(dev);
+                    var d = await factory.CreateDeviceAsync(dev).ConfigureAwait(false);
                     InvokeDeviceAdded(new DeviceAddedEventArgs(d));
                 }
                 catch (Exception ex)

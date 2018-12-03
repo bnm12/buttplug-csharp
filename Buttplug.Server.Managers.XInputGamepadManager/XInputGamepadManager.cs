@@ -1,5 +1,11 @@
-﻿using System;
-using Buttplug.Core;
+﻿// <copyright file="XInputGamepadManager.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
+using System;
+using Buttplug.Core.Logging;
 using SharpDX.XInput;
 
 namespace Buttplug.Server.Managers.XInputGamepadManager
@@ -39,7 +45,8 @@ namespace Buttplug.Server.Managers.XInputGamepadManager
             }
             catch (DllNotFoundException e)
             {
-                BpLogger.LogException(e, false, $"Required DirextX DLL not found: {e.Message}\nThis probably means you need to install the DirextX Runtimes from June 2010: https://www.microsoft.com/en-us/download/details.aspx?id=8109");
+                // TODO Should we maybe try testing for this in construction instead of during scanning?
+                BpLogger.Error($"Required DirectX DLL not found: {e.Message}\nThis probably means you need to install the DirectX Runtime from June 2010: https://www.microsoft.com/en-us/download/details.aspx?id=8109");
                 InvokeScanningFinished();
             }
         }

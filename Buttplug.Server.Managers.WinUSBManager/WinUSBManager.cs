@@ -1,5 +1,11 @@
+// <copyright file="WinUSBManager.cs" company="Nonpolynomial Labs LLC">
+// Buttplug C# Source Code File - Visit https://buttplug.io for more info about the project.
+// Copyright (c) Nonpolynomial Labs LLC. All rights reserved.
+// Licensed under the BSD 3-Clause license. See LICENSE file in the project root for full license information.
+// </copyright>
+
 using System;
-using Buttplug.Core;
+using Buttplug.Core.Logging;
 using MadWizard.WinUSBNet;
 using Microsoft.Win32;
 
@@ -50,7 +56,7 @@ namespace Buttplug.Server.Managers.WinUSBManager
             }
 
             var deviceRegistryObject = deviceParameters.GetValue("DeviceInterfaceGUIDs", string.Empty);
-            string deviceGuid = "";
+            string deviceGuid = string.Empty;
             if (deviceRegistryObject == null)
             {
                 BpLogger.Debug("No TranceVibrator Devices Driver GUIDs found in registry.");
@@ -95,7 +101,7 @@ namespace Buttplug.Server.Managers.WinUSBManager
             foreach (var deviceinfo in devices)
             {
                 var device = new USBDevice(deviceinfo);
-                BpLogger.Debug($"Found TranceVibrator Device");
+                BpLogger.Debug("Found TranceVibrator Device");
                 var tvDevice = new RezTranceVibratorDevice(LogManager, device, index);
                 index += 1;
                 InvokeDeviceAdded(new DeviceAddedEventArgs(tvDevice));
